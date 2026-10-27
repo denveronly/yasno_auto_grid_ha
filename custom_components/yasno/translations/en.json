@@ -1,0 +1,105 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Region",
+        "description": "Choose your region.",
+        "data": {
+          "region_id": "Region"
+        }
+      },
+      "dso": {
+        "title": "Distribution company",
+        "description": "Choose the distribution company (DSO).",
+        "data": {
+          "dso_id": "Company"
+        }
+      },
+      "method": {
+        "title": "How to find the group",
+        "description": "Find the outage group by address, or choose it yourself.",
+        "menu_options": {
+          "street": "By address (street and house)",
+          "group": "Choose the group"
+        }
+      },
+      "street": {
+        "title": "Street",
+        "description": "Type part of the street name, as on yasno.ua (e.g. Хрещатик).",
+        "data": {
+          "street": "Street"
+        }
+      },
+      "street_pick": {
+        "title": "Street",
+        "description": "Choose the street.",
+        "data": {
+          "street_id": "Street"
+        }
+      },
+      "house": {
+        "title": "House",
+        "description": "House number on {street} (e.g. 22 or 22/1).",
+        "data": {
+          "house": "House number"
+        }
+      },
+      "house_pick": {
+        "title": "House",
+        "description": "Choose the house.",
+        "data": {
+          "house_id": "House"
+        }
+      },
+      "group": {
+        "title": "Group",
+        "description": "Choose the outage group (e.g. 3.1).",
+        "data": {
+          "group": "Group"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach Yasno, try again later.",
+      "no_dso": "Yasno has no distribution company for this region.",
+      "street_not_found": "No street found, try another part of the name.",
+      "house_not_found": "No such house on this street.",
+      "group_not_found": "Yasno has no group for this address; choose the group yourself."
+    },
+    "abort": {
+      "cannot_connect": "Cannot reach Yasno, try again later.",
+      "no_groups": "Yasno has no schedule for this region.",
+      "already_configured": "This address is already set up."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "group": {
+        "name": "Group"
+      },
+      "minutes_to_outage": {
+        "name": "Minutes to outage"
+      },
+      "outage_duration": {
+        "name": "Outage duration"
+      },
+      "next_outage": {
+        "name": "Next outage"
+      },
+      "next_power_on": {
+        "name": "Power back"
+      },
+      "status": {
+        "name": "Schedule status"
+      }
+    },
+    "binary_sensor": {
+      "outage_now": {
+        "name": "Outage now"
+      },
+      "emergency": {
+        "name": "Emergency outages"
+      }
+    }
+  }
+}
