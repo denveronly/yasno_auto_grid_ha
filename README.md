@@ -29,17 +29,27 @@ the integration follows (and logs it).
 
 | Entity | State |
 |---|---|
-| `sensor.yasno_…_group` | group, e.g. `3.1` |
+| `binary_sensor.yasno_…_grid_status` | **on** while there is power by the schedule, **off** during a scheduled outage |
 | `sensor.yasno_…_minutes_to_outage` | minutes until the next outage starts; `9999` when none is scheduled |
+| `sensor.yasno_…_minutes_to_power_on` | during an outage: minutes until power comes back; `0` while there is power |
 | `sensor.yasno_…_outage_duration` | length of the next outage, minutes (adjacent slots and over-midnight outages are merged) |
 | `sensor.yasno_…_next_outage` | start of the next outage (timestamp) |
 | `sensor.yasno_…_power_back` | end of the outage in effect, or of the next one (timestamp) |
-| `sensor.yasno_…_schedule_status` | today's status: `ScheduleApplies`, `WaitingForSchedule`, `EmergencyShutdowns`, `NoOutages`; attributes: raw slots for today / tomorrow, merged `outages`, `status_tomorrow`, `updated_on` |
-| `binary_sensor.yasno_…_outage_now` | on during a scheduled outage |
+| `sensor.yasno_…_outage_hours_today` / `_tomorrow` | hours without power by the schedule; unknown until the day's schedule is published |
+| `sensor.yasno_…_outages_today` / `_tomorrow` | number of outages that day |
 | `binary_sensor.yasno_…_emergency_outages` | on while Yasno reports emergency outages (the schedule does not apply) |
+| `binary_sensor.yasno_…_tomorrow_schedule_published` | on once tomorrow's schedule is out |
+| `binary_sensor.yasno_…_schedule` / `_tomorrow` | **on** when outages go by the schedule that day, **off** with no outages, while waiting for the schedule or under emergency outages; Yasno's status (`ScheduleApplies`, `NoOutages`, `WaitingForSchedule`, `EmergencyShutdowns`) and the raw slots are attributes |
+| `sensor.yasno_…_schedule_updated` | when Yasno last changed the schedule (diagnostic) |
+| `sensor.yasno_…_minutes_to_probable_outage` | minutes to the next outage of the weekly **probable** schedule ("можливі відключення"); `9999` when none |
+| `sensor.yasno_…_next_probable_outage` | its start (timestamp); the next 8 days in the `outages` attribute |
+| `binary_sensor.yasno_…_probable_outage_now` | on during a probable outage |
+| `sensor.yasno_…_group` | group, e.g. `3.1` |
+| `calendar.yasno_…_outages` | planned outages, and probable ones on days without a published schedule |
 
-Yasno is read every 10 minutes; the entities are recalculated every minute. Days that are
-waiting for a schedule or under emergency outages have no planned outages.
+The planned schedule is read every 10 minutes, the probable one every hour; the entities are
+recalculated every minute. Days that are waiting for a schedule or under emergency outages
+have no planned outages – the probable schedule is what to expect then.
 
 ### With BatteryAI
 
@@ -48,6 +58,9 @@ In the [BatteryAI](https://github.com/denveronly/batteryai) add-on, Settings →
 - *Minutes to outage* → `sensor.yasno_…_minutes_to_outage`
 - *Outage duration* → `sensor.yasno_…_outage_duration`
 - *Emergency outages* → `binary_sensor.yasno_…_emergency_outages`
+
+Before tomorrow's schedule is published, `minutes_to_probable_outage` can stand in for
+*Minutes to outage*.
 
 ## Development
 

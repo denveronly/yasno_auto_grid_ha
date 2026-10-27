@@ -22,6 +22,7 @@ STREETS_URL = f"{BASE}/addresses/v2/streets"
 HOUSES_URL = f"{BASE}/addresses/v2/houses"
 GROUP_URL = f"{BASE}/addresses/v2/group"
 PLANNED_URL = f"{BASE}/regions/{{region_id}}/dsos/{{dso_id}}/planned-outages"
+PROBABLE_URL = f"{BASE}/probable-outages"
 
 KYIV = ZoneInfo("Europe/Kyiv")
 TIMEOUT = aiohttp.ClientTimeout(total=30)
@@ -89,6 +90,17 @@ class YasnoApi:
         return data
 
 
+    async def probable(self, region_id: int, dso_id: int) -> dict[str, Any]:
+        """Weekly probable outages: {region: {"dsos": {dso: {"groups": {group: {"slots":
+        {"0": [...], ..., "6": [...]}}}}}}}, weekday 0 = Monday."""
+        data = await self._get(PROBABLE_URL, {"regionId": region_id, "dsoId": dso_id})
+        if data is None:
+            return {}
+        if not isinstance(data, dict):
+            raise YasnoError("unexpected probable outages response")
+        return data
+
+
 @dataclass(frozen=True)
 class Outage:
     start: datetime
@@ -124,17 +136,55 @@ def outages(group_data: dict[str, Any], now: datetime) -> list[Outage]:
         raw = group_data.get(key)
         if not isinstance(raw, dict) or raw.get("status") in (STATUS_WAITING, STATUS_EMERGENCY, STATUS_NO_OUTAGES):
             continue
-        midnight = datetime.combine(_day(raw, fallback), datetime.min.time(), KYIV)
-        for slot in raw.get("slots") or []:
-            try:
-                if slot.get("type") != SLOT_OUTAGE:
-                    continue
-                start, end = int(slot["start"]), int(slot["end"])
-            except (AttributeError, KeyError, TypeError, ValueError):
+        intervals += _slot_outages(raw.get("slots"), _day(raw, fallback))
+    return _merge(intervals)
+
+
+def planned_days(group_data: dict[str, Any], now: datetime) -> set[date]:
+    """Days Yasno has published a schedule for (with or without outages)."""
+    today = now.astimezone(KYIV).date()
+    days = set()
+    for key, fallback in (("today", today), ("tomorrow", today + timedelta(days=1))):
+        raw = group_data.get(key)
+        if isinstance(raw, dict) and raw.get("status") in (STATUS_SCHEDULE, STATUS_NO_OUTAGES):
+            days.add(_day(raw, fallback))
+    return days
+
+
+def probable_group(data: dict[str, Any], region_id: int, dso_id: int, group: str) -> dict[str, Any]:
+    region = data.get(str(region_id)) or {}
+    dso = ((region.get("dsos") or {}).get(str(dso_id))) or {}
+    return ((dso.get("groups") or {}).get(group)) or {}
+
+
+def probable_outages(group_data: dict[str, Any], now: datetime, days: int = 8) -> list[Outage]:
+    """The weekly probable schedule laid over the next days (today included)."""
+    slots = group_data.get("slots") or {}
+    today = now.astimezone(KYIV).date()
+    intervals: list[Outage] = []
+    for offset in range(days):
+        day = today + timedelta(days=offset)
+        intervals += _slot_outages(slots.get(str(day.weekday())), day)
+    return _merge(intervals)
+
+
+def _slot_outages(slots: Any, day: date) -> list[Outage]:
+    midnight = datetime.combine(day, datetime.min.time(), KYIV)
+    result = []
+    for slot in slots or []:
+        try:
+            if slot.get("type") != SLOT_OUTAGE:
                 continue
-            if end > start:
-                intervals.append(Outage(_local(midnight, start), _local(midnight, end)))
-    intervals.sort(key=lambda o: o.start)
+            start, end = int(slot["start"]), int(slot["end"])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            continue
+        if end > start:
+            result.append(Outage(_local(midnight, start), _local(midnight, end)))
+    return result
+
+
+def _merge(intervals: list[Outage]) -> list[Outage]:
+    intervals = sorted(intervals, key=lambda o: o.start)
     merged: list[Outage] = []
     for item in intervals:
         if merged and item.start <= merged[-1].end:

@@ -39,3 +39,17 @@ def test_dst_day_keeps_wall_clock():
                       "slots": [{"start": 600, "end": 720, "type": "Definite"}]}}
     (o,) = outages(data, datetime(2026, 10, 25, 1, 0, tzinfo=KYIV))
     assert (o.start.hour, o.end.hour, o.start.utcoffset().total_seconds()) == (10, 12, 7200)
+
+
+def test_probable_week_over_days():
+    from custom_components.yasno.api import probable_group, probable_outages
+
+    week = {"0": [{"start": 0, "end": 60, "type": "Definite"}], "6": [{"start": 1380, "end": 1440, "type": "Definite"}]}
+    data = probable_group({"25": {"dsos": {"902": {"groups": {"1.2": {"slots": week}}}}}}, 25, 902, "1.2")
+    # Tuesday: the next Sunday 23:00 and Monday 00:00 merge into one outage.
+    result = outages_ = probable_outages(data, datetime(2026, 10, 27, 12, 0, tzinfo=KYIV))
+    assert [(o.start.isoformat(), o.end.isoformat()) for o in outages_] == [
+        ("2026-11-01T23:00:00+02:00", "2026-11-02T01:00:00+02:00"),
+    ]
+    assert result[0].minutes == 120
+    assert probable_group({}, 25, 902, "1.2") == {}

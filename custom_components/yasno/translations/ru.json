@@ -89,16 +89,54 @@
       "next_power_on": {
         "name": "Включение"
       },
-      "status": {
-        "name": "Статус графика"
+      "minutes_to_power_on": {
+        "name": "Минут до включения"
+      },
+      "outage_hours_today": {
+        "name": "Часов без света сегодня"
+      },
+      "outage_hours_tomorrow": {
+        "name": "Часов без света завтра"
+      },
+      "outages_today": {
+        "name": "Отключений сегодня"
+      },
+      "outages_tomorrow": {
+        "name": "Отключений завтра"
+      },
+      "minutes_to_probable_outage": {
+        "name": "Минут до возможного отключения"
+      },
+      "next_probable_outage": {
+        "name": "Следующее возможное отключение"
+      },
+      "schedule_updated": {
+        "name": "График обновлён"
       }
     },
     "binary_sensor": {
-      "outage_now": {
-        "name": "Отключение сейчас"
-      },
       "emergency": {
         "name": "Аварийные отключения"
+      },
+      "grid_status": {
+        "name": "Состояние сети"
+      },
+      "probable_outage_now": {
+        "name": "Возможное отключение сейчас"
+      },
+      "tomorrow_published": {
+        "name": "График на завтра опубликован"
+      },
+      "schedule": {
+        "name": "График"
+      },
+      "schedule_tomorrow": {
+        "name": "График на завтра"
+      }
+    },
+    "calendar": {
+      "outages": {
+        "name": "Отключения"
       }
     }
   }

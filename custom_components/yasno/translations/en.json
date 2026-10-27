@@ -89,16 +89,54 @@
       "next_power_on": {
         "name": "Power back"
       },
-      "status": {
-        "name": "Schedule status"
+      "minutes_to_power_on": {
+        "name": "Minutes to power on"
+      },
+      "outage_hours_today": {
+        "name": "Outage hours today"
+      },
+      "outage_hours_tomorrow": {
+        "name": "Outage hours tomorrow"
+      },
+      "outages_today": {
+        "name": "Outages today"
+      },
+      "outages_tomorrow": {
+        "name": "Outages tomorrow"
+      },
+      "minutes_to_probable_outage": {
+        "name": "Minutes to probable outage"
+      },
+      "next_probable_outage": {
+        "name": "Next probable outage"
+      },
+      "schedule_updated": {
+        "name": "Schedule updated"
       }
     },
     "binary_sensor": {
-      "outage_now": {
-        "name": "Outage now"
-      },
       "emergency": {
         "name": "Emergency outages"
+      },
+      "grid_status": {
+        "name": "Grid status"
+      },
+      "probable_outage_now": {
+        "name": "Probable outage now"
+      },
+      "tomorrow_published": {
+        "name": "Tomorrow schedule published"
+      },
+      "schedule": {
+        "name": "Schedule"
+      },
+      "schedule_tomorrow": {
+        "name": "Schedule tomorrow"
+      }
+    },
+    "calendar": {
+      "outages": {
+        "name": "Outages"
       }
     }
   }

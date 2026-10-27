@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import YasnoCoordinator
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
 
 type YasnoConfigEntry = ConfigEntry[YasnoCoordinator]
 

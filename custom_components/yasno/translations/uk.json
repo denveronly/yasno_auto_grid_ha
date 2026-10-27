@@ -89,16 +89,54 @@
       "next_power_on": {
         "name": "Увімкнення"
       },
-      "status": {
-        "name": "Статус графіка"
+      "minutes_to_power_on": {
+        "name": "Хвилин до увімкнення"
+      },
+      "outage_hours_today": {
+        "name": "Годин без світла сьогодні"
+      },
+      "outage_hours_tomorrow": {
+        "name": "Годин без світла завтра"
+      },
+      "outages_today": {
+        "name": "Відключень сьогодні"
+      },
+      "outages_tomorrow": {
+        "name": "Відключень завтра"
+      },
+      "minutes_to_probable_outage": {
+        "name": "Хвилин до можливого відключення"
+      },
+      "next_probable_outage": {
+        "name": "Наступне можливе відключення"
+      },
+      "schedule_updated": {
+        "name": "Графік оновлено"
       }
     },
     "binary_sensor": {
-      "outage_now": {
-        "name": "Відключення зараз"
-      },
       "emergency": {
         "name": "Аварійні відключення"
+      },
+      "grid_status": {
+        "name": "Стан мережі"
+      },
+      "probable_outage_now": {
+        "name": "Можливе відключення зараз"
+      },
+      "tomorrow_published": {
+        "name": "Графік на завтра опубліковано"
+      },
+      "schedule": {
+        "name": "Графік"
+      },
+      "schedule_tomorrow": {
+        "name": "Графік на завтра"
+      }
+    },
+    "calendar": {
+      "outages": {
+        "name": "Відключення"
       }
     }
   }

@@ -13,5 +13,6 @@ CONF_HOUSE = "house"
 CONF_GROUP = "group"
 
 FETCH_SECONDS = 10 * 60  # how often the schedule is read from Yasno
+PROBABLE_FETCH_SECONDS = 3600  # the weekly probable schedule
 GROUP_CHECK_SECONDS = 24 * 3600  # how often the address is looked up again (groups get reassigned)
 FAR_MINUTES = 9999  # "minutes to outage" when none is scheduled

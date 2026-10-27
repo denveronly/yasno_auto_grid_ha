@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +14,20 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import STATUS_EMERGENCY, Outage, YasnoApi, YasnoError, day_status, outages
+from .api import (
+    KYIV,
+    STATUS_EMERGENCY,
+    STATUS_NO_OUTAGES,
+    STATUS_SCHEDULE,
+    Outage,
+    YasnoApi,
+    YasnoError,
+    day_status,
+    outages,
+    planned_days,
+    probable_group,
+    probable_outages,
+)
 from .const import (
     CONF_DSO_ID,
     CONF_GROUP,
@@ -24,6 +37,7 @@ from .const import (
     DOMAIN,
     FETCH_SECONDS,
     GROUP_CHECK_SECONDS,
+    PROBABLE_FETCH_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,12 +49,37 @@ class YasnoData:
     group_data: dict[str, Any] = field(default_factory=dict)
     outages: list[Outage] = field(default_factory=list)
     fetched: datetime | None = None
+    probable: list[Outage] = field(default_factory=list)  # weekly probable schedule, next 8 days
+    planned_days: set[date] = field(default_factory=set)  # days with a published schedule
 
     def current(self, now: datetime) -> Outage | None:
         return next((o for o in self.outages if o.start <= now < o.end), None)
 
     def next(self, now: datetime) -> Outage | None:
         return next((o for o in self.outages if o.start > now), None)
+
+    def probable_current(self, now: datetime) -> Outage | None:
+        return next((o for o in self.probable if o.start <= now < o.end), None)
+
+    def probable_next(self, now: datetime) -> Outage | None:
+        return next((o for o in self.probable if o.start > now), None)
+
+    def day_outages(self, day: date) -> list[Outage]:
+        """Planned outages overlapping the day, cut to it."""
+        start = datetime.combine(day, datetime.min.time(), KYIV)
+        end = datetime.combine(day + timedelta(days=1), datetime.min.time(), KYIV)
+        return [Outage(max(o.start, start), min(o.end, end)) for o in self.outages if o.start < end and o.end > start]
+
+    @property
+    def tomorrow_published(self) -> bool:
+        return self.status_tomorrow in (STATUS_SCHEDULE, STATUS_NO_OUTAGES)
+
+    @property
+    def updated(self) -> datetime | None:
+        try:
+            return dt_util.parse_datetime(str(self.updated_on)) if self.updated_on else None
+        except ValueError:
+            return None
 
     @property
     def status_today(self) -> str | None:
@@ -71,6 +110,8 @@ class YasnoCoordinator(DataUpdateCoordinator[YasnoData]):
         self._fetched: datetime | None = None
         self._group_checked_at = time.monotonic()  # the flow has just looked it up
         self._planned: dict[str, Any] | None = None
+        self._probable: dict[str, Any] = {}
+        self._probable_at = -PROBABLE_FETCH_SECONDS
 
     async def _async_update_data(self) -> YasnoData:
         if self._planned is None or time.monotonic() - self._fetched_at >= FETCH_SECONDS:
@@ -84,10 +125,31 @@ class YasnoCoordinator(DataUpdateCoordinator[YasnoData]):
             else:
                 self._fetched_at = time.monotonic()
                 self._fetched = dt_util.now()
+        if time.monotonic() - self._probable_at >= PROBABLE_FETCH_SECONDS:
+            await self._fetch_probable()
         group_data = self._planned.get(self._group) if self._planned else None
         if not isinstance(group_data, dict):
             raise UpdateFailed(f"Yasno has no schedule for group {self._group}")
-        return YasnoData(self._group, group_data, outages(group_data, dt_util.now()), self._fetched)
+        now = dt_util.now()
+        data = self.entry.data
+        probable = probable_group(self._probable, data[CONF_REGION_ID], data[CONF_DSO_ID], self._group)
+        return YasnoData(
+            self._group,
+            group_data,
+            outages(group_data, now),
+            self._fetched,
+            probable_outages(probable, now),
+            planned_days(group_data, now),
+        )
+
+    async def _fetch_probable(self) -> None:
+        """The weekly probable schedule changes rarely; without it only its entities are empty."""
+        self._probable_at = time.monotonic()
+        try:
+            self._probable = await self.api.probable(self.entry.data[CONF_REGION_ID], self.entry.data[CONF_DSO_ID])
+        except YasnoError as err:
+            self._probable_at -= PROBABLE_FETCH_SECONDS - FETCH_SECONDS  # try again in 10 minutes
+            _LOGGER.warning("Probable outages are not available: %s", err)
 
     async def _check_group(self) -> None:
         """Yasno moves houses between groups now and then: look the address up once a day."""
