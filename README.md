@@ -1,7 +1,13 @@
-# Yasno outages for Home Assistant
+# Yasno / DTEK outages for Home Assistant
 
-Planned power outage schedule from [Yasno](https://yasno.ua) (DTEK Kyiv / Dnipro) for your
-address. The outage group is found by **street and house number** – no need to know it.
+Planned power outage schedule for your address or group:
+
+- **Kyiv, Dnipro** – from [Yasno](https://yasno.ua); the outage group is found by **street
+  and house number**.
+- **Kyiv region** – the DTEK KREM schedule ([dtek-krem.com.ua](https://www.dtek-krem.com.ua/ua/shutdowns)),
+  read from the [outage-data-ua](https://github.com/Baskerville42/outage-data-ua) mirror,
+  which loads the DTEK site with a headless browser every few minutes (the site itself
+  blocks scripts). You choose your group (черга); find it once by address on the DTEK site.
 
 The old `api.yasno.com.ua/api/v1/pages/home/schedule-turn-off-electricity` no longer
 exists; this integration uses the current `app.yasno.ua` blackout-service API.
@@ -10,12 +16,15 @@ exists; this integration uses the current `app.yasno.ua` blackout-service API.
 
 1. HACS → ⋮ → **Custom repositories** → add `https://github.com/denveronly/yasno_auto_grid_ha`,
    category **Integration**.
-2. Install **Yasno outages** and restart Home Assistant.
-3. **Settings → Devices & services → Add integration → Yasno outages**.
+2. Install **Yasno / DTEK outages** and restart Home Assistant.
+3. **Settings → Devices & services → Add integration → Yasno / DTEK outages**.
 
 Manual install: copy `custom_components/yasno` to `/config/custom_components/` and restart.
 
 ## Setup
+
+First choose the source: **Kyiv, Dnipro (Yasno)** or **Kyiv region (DTEK)**. For DTEK, pick
+your group and you are done (entities are `…dtek_kiivska_oblast_2_2_…`). For Yasno:
 
 1. **Region** (Київ, Дніпро, …) and the distribution company (asked only when there are several).
 2. **By address**: type part of the street name (`хрещ`), pick the street, type the house
@@ -50,6 +59,10 @@ the integration follows (and logs it).
 The planned schedule is read every 10 minutes, the probable one every hour; the entities are
 recalculated every minute. Days that are waiting for a schedule or under emergency outages
 have no planned outages – the probable schedule is what to expect then.
+
+With DTEK, the probable schedule is DTEK's weekly "possible outages" (можливо відключення),
+and there is no emergency-outage flag (that entity stays off). Add the integration once per
+address or group to follow several.
 
 ### With BatteryAI
 

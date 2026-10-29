@@ -1,5 +1,5 @@
 {
-  "name": "Yasno outages",
+  "name": "Yasno / DTEK outages",
   "content_in_root": false,
   "render_readme": true,
   "homeassistant": "2024.12.0"

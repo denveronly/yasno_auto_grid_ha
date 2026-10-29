@@ -1,6 +1,6 @@
 {
   "domain": "yasno",
-  "name": "Yasno outages",
+  "name": "Yasno / DTEK outages",
   "codeowners": ["@denveronly"],
   "config_flow": true,
   "documentation": "https://github.com/denveronly/yasno_auto_grid_ha",
@@ -8,5 +8,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/denveronly/yasno_auto_grid_ha/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

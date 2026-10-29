@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- **Kyiv region (DTEK KREM)**: a second source. Choose *Kyiv region (DTEK)* and your group;
+  the schedule comes from the outage-data-ua mirror of the DTEK site (refreshed every few
+  minutes). All the same entities, with DTEK's weekly "possible outages" as the probable
+  schedule. Kyiv and Dnipro stay on Yasno.
+
 ## 0.2.0
 
 - **Grid status** (`binary_sensor.…_grid_status`) replaces *Outage now*: on while there is

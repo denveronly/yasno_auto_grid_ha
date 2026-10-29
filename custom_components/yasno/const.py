@@ -11,6 +11,9 @@ CONF_STREET = "street"
 CONF_HOUSE_ID = "house_id"
 CONF_HOUSE = "house"
 CONF_GROUP = "group"
+CONF_SOURCE = "source"  # "yasno" (default) or "dtek"
+SOURCE_YASNO = "yasno"
+SOURCE_DTEK = "dtek"
 
 FETCH_SECONDS = 10 * 60  # how often the schedule is read from Yasno
 PROBABLE_FETCH_SECONDS = 3600  # the weekly probable schedule

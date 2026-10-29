@@ -1,13 +1,6 @@
 {
   "config": {
     "step": {
-      "user": {
-        "title": "Region",
-        "description": "Choose your region.",
-        "data": {
-          "region_id": "Region"
-        }
-      },
       "dso": {
         "title": "Distribution company",
         "description": "Choose the distribution company (DSO).",
@@ -54,6 +47,35 @@
       "group": {
         "title": "Group",
         "description": "Choose the outage group (e.g. 3.1).",
+        "data": {
+          "group": "Group"
+        }
+      },
+      "yasno": {
+        "title": "Region",
+        "description": "Choose your region.",
+        "data": {
+          "region_id": "Region"
+        }
+      },
+      "user": {
+        "title": "Source",
+        "description": "Kyiv city and Dnipro: Yasno, the group is found by address. Kyiv region: DTEK KREM schedule, choose your group (see dtek-krem.com.ua/ua/shutdowns).",
+        "menu_options": {
+          "yasno": "Kyiv, Dnipro (Yasno)",
+          "dtek": "Kyiv region (DTEK)"
+        }
+      },
+      "dtek": {
+        "title": "Region",
+        "description": "Choose the DTEK region.",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "dtek_group": {
+        "title": "Group",
+        "description": "Your group in {region} (find it once by address on dtek-krem.com.ua/ua/shutdowns).",
         "data": {
           "group": "Group"
         }

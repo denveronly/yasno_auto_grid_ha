@@ -37,7 +37,9 @@ async def test_address_flow_and_entities(hass, freezer):
     with patch("custom_components.yasno.config_flow.YasnoApi", return_value=api), \
          patch("custom_components.yasno.coordinator.YasnoApi", return_value=api):
         result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
-        assert result["step_id"] == "user"
+        assert result["type"] is FlowResultType.MENU
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "yasno"})
+        assert result["step_id"] == "yasno"
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"region_id": "25"})
         assert result["type"] is FlowResultType.MENU  # single DSO is picked by itself
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "street"})
@@ -110,6 +112,7 @@ async def test_group_by_hand(hass):
     with patch("custom_components.yasno.config_flow.YasnoApi", return_value=api), \
          patch("custom_components.yasno.coordinator.YasnoApi", return_value=api):
         result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "yasno"})
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"region_id": "3"})
         assert result["step_id"] == "dso"
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"dso_id": "301"})

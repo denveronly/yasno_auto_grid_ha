@@ -28,16 +28,20 @@ from .api import (
     probable_group,
     probable_outages,
 )
+from . import dtek
 from .const import (
     CONF_DSO_ID,
     CONF_GROUP,
     CONF_HOUSE_ID,
+    CONF_REGION,
     CONF_REGION_ID,
+    CONF_SOURCE,
     CONF_STREET_ID,
     DOMAIN,
     FETCH_SECONDS,
     GROUP_CHECK_SECONDS,
     PROBABLE_FETCH_SECONDS,
+    SOURCE_DTEK,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,7 +103,7 @@ class YasnoData:
 
 
 class YasnoCoordinator(DataUpdateCoordinator[YasnoData]):
-    """Updates every minute (minutes to outage count down), reads Yasno every 10 minutes."""
+    """Updates every minute (minutes to outage count down), reads Yasno / DTEK every 10 minutes."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=timedelta(minutes=1), config_entry=entry)
@@ -112,8 +116,11 @@ class YasnoCoordinator(DataUpdateCoordinator[YasnoData]):
         self._planned: dict[str, Any] | None = None
         self._probable: dict[str, Any] = {}
         self._probable_at = -PROBABLE_FETCH_SECONDS
+        self._dtek: dict[str, Any] | None = None
 
     async def _async_update_data(self) -> YasnoData:
+        if self.entry.data.get(CONF_SOURCE) == SOURCE_DTEK:
+            return await self._update_dtek()
         if self._planned is None or time.monotonic() - self._fetched_at >= FETCH_SECONDS:
             await self._check_group()
             try:
@@ -139,6 +146,29 @@ class YasnoCoordinator(DataUpdateCoordinator[YasnoData]):
             outages(group_data, now),
             self._fetched,
             probable_outages(probable, now),
+            planned_days(group_data, now),
+        )
+
+    async def _update_dtek(self) -> YasnoData:
+        """One file has both the schedule and the weekly preset of every group."""
+        if self._dtek is None or time.monotonic() - self._fetched_at >= FETCH_SECONDS:
+            try:
+                self._dtek = await dtek.fetch(async_get_clientsession(self.hass), self.entry.data[CONF_REGION])
+            except YasnoError as err:
+                if self._dtek is None:
+                    raise UpdateFailed(str(err)) from err
+                _LOGGER.warning("DTEK schedule is not available, keeping the last one: %s", err)
+            else:
+                self._fetched_at = time.monotonic()
+                self._fetched = dt_util.now()
+        now = dt_util.now()
+        group_data = dtek.group_data(self._dtek, self._group, now)
+        return YasnoData(
+            self._group,
+            group_data,
+            outages(group_data, now),
+            self._fetched,
+            probable_outages(dtek.probable_data(self._dtek, self._group), now),
             planned_days(group_data, now),
         )
 

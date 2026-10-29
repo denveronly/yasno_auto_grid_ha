@@ -1,4 +1,5 @@
-"""Set up: region -> DSO -> street -> house (Yasno finds the group), or the group by hand."""
+"""Set up: Yasno (region -> DSO -> street -> house, Yasno finds the group, or the group by
+hand) or DTEK (region -> group)."""
 
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
+from . import dtek
 from .api import YasnoApi, YasnoError
 from .const import (
     CONF_DSO,
@@ -19,9 +21,12 @@ from .const import (
     CONF_HOUSE_ID,
     CONF_REGION,
     CONF_REGION_ID,
+    CONF_SOURCE,
     CONF_STREET,
     CONF_STREET_ID,
     DOMAIN,
+    SOURCE_DTEK,
+    SOURCE_YASNO,
 )
 
 MAX_CHOICES = 100
@@ -65,6 +70,36 @@ class YasnoConfigFlow(ConfigFlow, domain=DOMAIN):
         return self._api
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        return self.async_show_menu(step_id="user", menu_options=[SOURCE_YASNO, SOURCE_DTEK])
+
+    async def async_step_dtek(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """DTEK region; the group is chosen from the groups in its schedule."""
+        if user_input is None and len(dtek.REGIONS) == 1:
+            user_input = {CONF_REGION: next(iter(dtek.REGIONS))}
+        if user_input is not None:
+            self.data = {CONF_SOURCE: SOURCE_DTEK, CONF_REGION: user_input[CONF_REGION]}
+            return await self.async_step_dtek_group()
+        return self.async_show_form(
+            step_id="dtek", data_schema=vol.Schema({vol.Required(CONF_REGION): _select(dtek.REGIONS)})
+        )
+
+    async def async_step_dtek_group(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return await self._create(user_input[CONF_GROUP])
+        try:
+            data = await dtek.fetch(async_get_clientsession(self.hass), self.data[CONF_REGION])
+        except YasnoError:
+            return self.async_abort(reason="cannot_connect")
+        groups = sorted(dtek.groups(data), key=_group_key)
+        if not groups:
+            return self.async_abort(reason="no_groups")
+        return self.async_show_form(
+            step_id="dtek_group",
+            data_schema=vol.Schema({vol.Required(CONF_GROUP): _select({g: g for g in groups})}),
+            description_placeholders={CONF_REGION: dtek.REGIONS[self.data[CONF_REGION]]},
+        )
+
+    async def async_step_yasno(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if not self._regions:
             try:
@@ -74,6 +109,7 @@ class YasnoConfigFlow(ConfigFlow, domain=DOMAIN):
         regions = {str(r["id"]): str(r.get("value") or r["id"]) for r in self._regions if "id" in r}
         if user_input is not None:
             region = next(r for r in self._regions if str(r["id"]) == user_input[CONF_REGION_ID])
+            self.data[CONF_SOURCE] = SOURCE_YASNO
             self.data[CONF_REGION_ID] = int(region["id"])
             self.data[CONF_REGION] = regions[user_input[CONF_REGION_ID]]
             self._dsos = _choices(region.get("dsos") or [])
@@ -84,7 +120,7 @@ class YasnoConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 return await self.async_step_dso()
         return self.async_show_form(
-            step_id="user",
+            step_id="yasno",
             data_schema=vol.Schema({vol.Required(CONF_REGION_ID): _select(regions)}),
             errors=errors,
         )
@@ -193,7 +229,10 @@ class YasnoConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def _create(self, group: str) -> ConfigFlowResult:
         self.data[CONF_GROUP] = group
-        if self.data.get(CONF_HOUSE_ID):
+        if self.data[CONF_SOURCE] == SOURCE_DTEK:
+            await self.async_set_unique_id(f"dtek_{self.data[CONF_REGION]}_{group}")
+            title = f"{dtek.REGIONS[self.data[CONF_REGION]]} {group}"
+        elif self.data.get(CONF_HOUSE_ID):
             await self.async_set_unique_id(f"{self.data[CONF_REGION_ID]}_{self.data[CONF_STREET_ID]}_{self.data[CONF_HOUSE_ID]}")
             title = f"{self.data[CONF_STREET]}, {self.data[CONF_HOUSE]} ({group})"
         else:
